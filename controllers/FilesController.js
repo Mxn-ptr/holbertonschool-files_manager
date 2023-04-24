@@ -38,7 +38,7 @@ export default class FilesController {
       name: fileName,
       type: fileType,
       isPublic: fileIsPublic,
-      parentId: fileParentId,
+      parentId: fileParentId === 0 ? fileParentId : ObjectId(fileParentId),
     };
 
     if (fileType === 'folder') {
