@@ -86,9 +86,16 @@ export default class FilesController {
     const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(id) });
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-    const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(req.params.id), userId: user._id }, { projection: { localPath: 0 } });
+    const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(req.params.id), userId: user._id });
     if (!file) return res.status(404).json({ error: 'Not found' });
-    return res.status(201).json(file);
+    return res.status(201).json({
+      id: file._id,
+      userId: file.userId,
+      name: file.name,
+      type: file.type,
+      isPublic: file.isPublic,
+      parentId: file.parentId,
+    });
   }
 
   static async getIndex(req, res) {
