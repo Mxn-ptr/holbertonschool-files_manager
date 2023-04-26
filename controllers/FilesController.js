@@ -197,8 +197,7 @@ export default class FilesController {
       if (!id) return res.status(404).json({ error: 'Not found' });
 
       const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(id) });
-      if (!user) return res.status(404).json({ error: 'Not found' });
-      if (file.userId.toString() !== user._id.toString()) return res.statsu(404).json({ error: 'Not found' });
+      if (!user || file.userId.toString() !== user._id.toString()) return res.status(404).json({ error: 'Not found' });
     }
 
     if (file.type === 'folder') return res.status(400).json({ error: 'A folder doesn\'t have content' });
