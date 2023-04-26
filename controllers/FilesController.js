@@ -98,13 +98,18 @@ export default class FilesController {
 
     const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(id) });
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    let match;
 
     const parent = req.query.parentId || 0;
+    if (parent === 0) {
+      match = {};
+    } else {
+      match = { parentId: parent === '0' ? Number(parent) : ObjectId(parent) };
+    }
     const page = req.query.page || 0;
 
     const fileArray = await dbClient.db.collection('files').aggregate([
-      { $match: { userId: user._id, parentId: parent } },
-      { $project: { localPath: 0 } },
+      { $match: match },
       { $sort: { createdAt: -1 } },
       { $skip: page * 20 },
       { $limit: 20 },
