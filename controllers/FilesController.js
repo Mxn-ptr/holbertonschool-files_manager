@@ -188,7 +188,7 @@ export default class FilesController {
     const fileId = req.params.id || '';
     if (fileId === '') return res.status(404).json({ error: 'Not found' });
 
-    const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(req.params.id) });
+    const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(fileId) });
     if (!file) return res.status(404).json({ error: 'Not found' });
 
     if (!file.isPublic) {
