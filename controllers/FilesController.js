@@ -2,11 +2,13 @@ import { ObjectId } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import mime from 'mime-types';
+import Bull from 'bull';
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
 
 export default class FilesController {
   static async postUpload(req, res) {
+    const fileQueue = new Bull('fileQueue');
     const path = process.env.FOLDER_PATH || 'tmp/files_manager';
     const token = req.header('X-Token') || '';
     const id = await redisClient.get(`auth_${token}`);
@@ -68,6 +70,12 @@ export default class FilesController {
 
     file.localPath = filePath;
     await dbClient.db.collection('files').insertOne(file);
+    if (file.type === 'image') {
+      await fileQueue.add({
+        fileId: file._id,
+        userId: user._id,
+      });
+    }
     return res.status(201).json({
       id: file._id,
       userId: file.userId,
@@ -188,8 +196,17 @@ export default class FilesController {
     const fileId = req.params.id || '';
     if (fileId === '') return res.status(404).json({ error: 'Not found' });
 
+    const size = req.query.size || 0;
+
     const file = await dbClient.db.collection('files').findOne({ _id: ObjectId(fileId) });
     if (!file) return res.status(404).json({ error: 'Not found' });
+    let path;
+
+    if (size === 0) {
+      path = file.localPath;
+    } else {
+      path = `${file.localPath}_${size}`;
+    }
 
     if (!file.isPublic) {
       const token = req.header('X-Token') || '';
@@ -203,7 +220,7 @@ export default class FilesController {
     if (file.type === 'folder') return res.status(400).json({ error: 'A folder doesn\'t have content' });
 
     try {
-      const fileData = fs.readFileSync(file.localPath);
+      const fileData = fs.readFileSync(path);
       const mimeType = mime.contentType(file.name);
       res.setHeader('Content-Type', mimeType);
       return res.status(200).send(fileData);
